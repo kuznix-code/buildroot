@@ -1,0 +1,72 @@
+#!/bin/sh
+# Check Buildroot package Git sources for newer revisions.
+# This is intentionally report-only: it never rewrites package metadata.
+
+set -eu
+
+usage() {
+	cat >&2 <<'EOF'
+usage: kuzpkg-git-update --package-dir DIR --output FILE [--jobs N]
+
+Scan package .mk files for Git repositories and compare the configured
+revision with the remote repository. The result is a tab-separated report.
+EOF
+	exit 2
+}
+
+PACKAGE_DIR=
+OUTPUT=
+jobs=1
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--package-dir) PACKAGE_DIR=${2:?missing argument for --package-dir}; shift 2 ;;
+		--output) OUTPUT=${2:?missing argument for --output}; shift 2 ;;
+		--jobs) jobs=${2:?missing argument for --jobs}; shift 2 ;;
+		-h|--help) usage ;;
+		*) echo "kuzpkg-git-update: unknown option: $1" >&2; usage ;;
+	esac
+done
+
+[ -d "$PACKAGE_DIR" ] || { echo "kuzpkg-git-update: package directory not found: $PACKAGE_DIR" >&2; exit 1; }
+[ -n "$OUTPUT" ] || { echo "kuzpkg-git-update: --output is required" >&2; usage; }
+case "$jobs" in
+	''|*[!0-9]*) echo "kuzpkg-git-update: invalid --jobs: $jobs" >&2; exit 2 ;;
+esac
+
+mkdir -p "$(dirname "$OUTPUT")"
+tmp=$(mktemp "${TMPDIR:-/tmp}/kuzpkg-git-update.XXXXXXXX")
+trap 'rm -f "$tmp"' EXIT HUP INT TERM
+
+printf '%s\n' 'package\tgit_url\trevision\tremote\tstatus' > "$tmp"
+
+find "$PACKAGE_DIR" -type f -name '*.mk' -print | sort | while IFS= read -r mk; do
+	name=$(basename "$mk" .mk)
+	url=$(sed -n 's/^\s*[^#]*_SITE\s*=\s*\(git[^ ]*\|https:\/\/[^ ]*\.git[^ ]*\|git:\/\/[^ ]*\).*/\1/p' "$mk" | head -n1)
+	rev=$(sed -n 's/^\s*[^#]*_VERSION\s*=\s*\([^ ]*\).*/\1/p' "$mk" | head -n1)
+	[ -n "$url" ] || continue
+	[ -n "$rev" ] || continue
+
+	case "$url" in
+		git://*|https://*.git*|https://github.com/*|https://gitlab.com/*) ;;
+		*) continue ;;
+	esac
+
+	remote=$(git ls-remote "$url" HEAD 2>/dev/null | awk 'NR == 1 { print $1 }') || remote=
+	[ -n "$remote" ] || {
+		printf '%s\t%s\t%s\t-\tunreachable\n' "$name" "$url" "$rev" >> "$tmp"
+		continue
+	}
+
+	if [ "$rev" = "$remote" ]; then
+		status=current
+	elif git ls-remote "$url" "refs/tags/$rev" 2>/dev/null | grep -q .; then
+		status=tag-current
+	else
+		status=update-available
+	fi
+	printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$url" "$rev" "$remote" "$status" >> "$tmp"
+done
+
+mv "$tmp" "$OUTPUT"
+printf '%s\n' "$OUTPUT"
