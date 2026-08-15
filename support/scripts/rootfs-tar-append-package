@@ -1,0 +1,81 @@
+#!/bin/sh
+# Append the contents of a package archive to an existing rootfs tarball.
+set -eu
+
+usage() {
+	echo "Usage: $0 <rootfs-tarball> <package-archive>" >&2
+	exit 1
+}
+
+[ "$#" -eq 2 ] || usage
+
+rootfs=$1
+package=$2
+
+[ -f "$rootfs" ] || { echo "error: rootfs tarball not found: $rootfs" >&2; exit 1; }
+[ -f "$package" ] || { echo "error: package archive not found: $package" >&2; exit 1; }
+
+workdir=$(mktemp -d "${TMPDIR:-/tmp}/buildroot-tar-append.XXXXXX")
+trap 'rm -rf "$workdir"' EXIT HUP INT TERM
+
+case "$rootfs" in
+	*.tar.gz|*.tgz)
+		decompress="gzip -cd"
+		compress="gzip -9 -c -n"
+		;;
+	*.tar.bz2|*.tbz2)
+		decompress="bzip2 -cd"
+		compress="bzip2 -9 -c"
+		;;
+	*.tar.xz|*.txz)
+		decompress="xz -cd"
+		compress="xz -9 -c"
+		;;
+	*.tar.lz4)
+		decompress="lz4 -cd"
+		compress="lz4 -l -9 -c"
+		;;
+	*.tar.lzma)
+		decompress="lzma -cd"
+		compress="lzma -9 -c"
+		;;
+	*.tar.lzo)
+		decompress="lzop -cd"
+		compress="lzop -9 -c"
+		;;
+	*.tar.zst|*.tzst)
+		decompress="zstd -cd"
+		compress="zstd -19 -T0 -c"
+		;;
+	*.tar)
+		decompress="cat"
+		compress="cat"
+		;;
+	*)
+		echo "error: unsupported rootfs tarball format: $rootfs" >&2
+		exit 1
+		;;
+esac
+
+base=$workdir/rootfs.tar
+
+# Work on a temporary archive and replace the original only after the
+# package has been appended successfully.
+$decompress "$rootfs" > "$base"
+
+# A package archive is unpacked into a temporary directory first. This lets
+# tar append the package's files rather than storing the package archive as a
+# single member of the rootfs.
+pkgdir=$workdir/package
+mkdir -p "$pkgdir"
+tar -xf "$package" -C "$pkgdir"
+
+(cd "$pkgdir" && find . -mindepth 1 -print0 | LC_ALL=C sort -z | \
+	tar --null -T - -rf "$base" --numeric-owner --no-recursion)
+
+if [ "$decompress" = "cat" ]; then
+	mv "$base" "$rootfs"
+else
+	$compress < "$base" > "$rootfs.new"
+	mv "$rootfs.new" "$rootfs"
+fi
