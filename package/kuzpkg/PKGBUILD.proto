@@ -1,0 +1,27 @@
+# Buildroot-generated PKGBUILD template for kuzpkg.
+# Maintainer: Kuznix Team
+pkgname=@PKGNAME@
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc="@PKGDESC@"
+arch=('@ARCH@')
+url="@URL@"
+license=('GPL-2.0-or-later')
+groups=('buildroot')
+depends=()
+makedepends=()
+source=()
+sha256sums=()
+
+build() {
+	:
+}
+
+check() {
+	:
+}
+
+package() {
+	mkdir -p "$pkgdir"
+	cp -a "@TARGET_DIR@/." "$pkgdir/"
+}
