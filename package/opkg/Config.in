@@ -31,3 +31,5 @@ config BR2_PACKAGE_OPKG_GPG_SIGN
 	  gnupg/libgpgme.
 
 endif
+
+source "package/kuzpkg/Config.in"
