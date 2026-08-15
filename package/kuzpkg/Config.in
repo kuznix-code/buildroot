@@ -1,0 +1,29 @@
+config BR2_PACKAGE_KUZPKG
+	bool "kuzpkg"
+	depends on BR2_USE_MMU
+	depends on BR2_PACKAGE_BASH
+	select BR2_PACKAGE_LIBARCHIVE
+	select BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_GPGME
+	select BR2_PACKAGE_OPENSSL
+	select BR2_PACKAGE_ZSTD
+	help
+	  Pacman-style package manager and package builder for Kuznix.
+
+	  Packages use the .kuzpkg.tar.zst format and PKGBUILD-compatible
+	  build recipes. The upstream Kuznix-Team/kuzpkg git tree is used.
+
+	  https://github.com/Kuznix-Team/kuzpkg
+
+if BR2_PACKAGE_KUZPKG
+
+config BR2_PACKAGE_KUZPKG_AUTO_PACKAGE
+	bool "automatically create a .kuzpkg.tar.zst package"
+	default y
+	help
+	  After the Buildroot target has been assembled, automatically create
+	  a reproducible buildroot-system package from the selected configuration.
+	  Package metadata is generated from make show-info and the bundled
+	  PKGBUILD.proto template.
+
+endif
