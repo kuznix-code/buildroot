@@ -1,0 +1,14 @@
+config BR2_PACKAGE_HOST_KUZPKG
+	bool "host kuzpkg"
+	select BR2_PACKAGE_HOST_MESON
+	select BR2_PACKAGE_HOST_NINJA
+	select BR2_PACKAGE_HOST_LIBARCHIVE
+	select BR2_PACKAGE_HOST_FAKEROOT
+	select BR2_PACKAGE_HOST_CURL
+	select BR2_PACKAGE_HOST_GPGME
+	select BR2_PACKAGE_HOST_ZSTD
+	select BR2_PACKAGE_HOST_ASCIIDOC
+	help
+	  Host-side Kuznix package manager and PKGBUILD-compatible package
+	  builder. This is used by Buildroot to generate .kuzpkg.tar.zst
+	  packages from the configured target filesystem.
