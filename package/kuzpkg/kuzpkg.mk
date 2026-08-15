@@ -46,24 +46,28 @@ HOST_KUZPKG_CONF_OPTS = \
 	-Ddoc=enabled \
 	-Dpkg-ext=.kuzpkg.tar.zst
 
-ifeq ($(BR2_PACKAGE_KUZPKG_AUTO_PACKAGE),y)
-KUZPKG_BUILD_VERSION = $(subst -,.,$(BR2_VERSION_FULL))
-
-define KUZPKG_GENERATE_SYSTEM_PACKAGE
-	$(Q)mkdir -p $(BINARIES_DIR)
-	$(Q)$(TOPDIR)/support/scripts/kuzpkg-build \
-		--target "$(TARGET_DIR)" \
-		--output "$(BINARIES_DIR)" \
-		--proto "$(KUZPKG_PKGDIR)/PKGBUILD.proto" \
-		--pkgname buildroot-system \
-		--pkgver "$(KUZPKG_BUILD_VERSION)" \
-		--arch "$(BR2_ARCH)" \
-		--url "https://buildroot.org/" \
-		--desc "Buildroot target filesystem generated from the selected configuration" \
-		--makepkg "$(HOST_DIR)/bin/makepkg"
+# Generate one .kuzpkg.tar.zst for every selected target package. The generic
+# package infrastructure already records each package's target file list in
+# .files-list.txt, so no changes are required in the ~3,000 package .mk files.
+# Host packages are excluded because they are not part of TARGET_DIR.
+define KUZPKG_GENERATE_ALL_PACKAGES
+	$(Q)mkdir -p $(BINARIES_DIR)/kuzpkg
+	$(foreach pkg,$(PACKAGES),\
+		$(if $(filter host-%,$(pkg)),,\
+			$(if $(wildcard $($(call UPPERCASE,$(pkg))_DIR)/.files-list.txt),\
+				$(Q)$(TOPDIR)/support/scripts/kuzpkg-build \
+					--target "$(TARGET_DIR)" \
+					--output "$(BINARIES_DIR)/kuzpkg" \
+					--proto "$(KUZPKG_PKGDIR)/PKGBUILD.proto" \
+					--file-list "$($(call UPPERCASE,$(pkg))_DIR)/.files-list.txt" \
+					--pkgname "$(pkg)" \
+					--pkgver "$(or $($(call UPPERCASE,$(pkg))_VERSION),1)" \
+					--arch "$(BR2_ARCH)" \
+					--url "$(or $($(call UPPERCASE,$(pkg))_SITE),https://buildroot.org/)" \
+					--desc "Buildroot package $(pkg)" \
+					--makepkg "$(HOST_DIR)/bin/makepkg"$(sep))))
 endef
-KUZPKG_TARGET_FINALIZE_HOOKS += KUZPKG_GENERATE_SYSTEM_PACKAGE
-endif
+KUZPKG_TARGET_FINALIZE_HOOKS += KUZPKG_GENERATE_ALL_PACKAGES
 
 $(eval $(meson-package))
 $(eval $(host-meson-package))
