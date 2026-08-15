@@ -1,0 +1,7 @@
+config BR2_PACKAGE_HOST_ASCIIDOC
+	bool "host asciidoc"
+	help
+	  AsciiDoc.py documentation processor used for host-side package
+	  documentation generation.
+
+	  https://asciidoc-py.github.io/
