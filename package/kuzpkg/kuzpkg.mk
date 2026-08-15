@@ -47,7 +47,22 @@ HOST_KUZPKG_CONF_OPTS = \
 	-Dpkg-ext=.kuzpkg.tar.zst
 
 ifeq ($(BR2_PACKAGE_KUZPKG_AUTO_PACKAGE),y)
-HOST_KUZPKG_DEPENDENCIES += host-python3
+KUZPKG_BUILD_VERSION = $(subst -,.,$(BR2_VERSION_FULL))
+
+define KUZPKG_GENERATE_SYSTEM_PACKAGE
+	$(Q)mkdir -p $(BINARIES_DIR)
+	$(Q)$(TOPDIR)/support/scripts/kuzpkg-build \
+		--target "$(TARGET_DIR)" \
+		--output "$(BINARIES_DIR)" \
+		--proto "$(KUZPKG_PKGDIR)/PKGBUILD.proto" \
+		--pkgname buildroot-system \
+		--pkgver "$(KUZPKG_BUILD_VERSION)" \
+		--arch "$(BR2_ARCH)" \
+		--url "https://buildroot.org/" \
+		--desc "Buildroot target filesystem generated from the selected configuration" \
+		--makepkg "$(HOST_DIR)/bin/makepkg"
+endef
+KUZPKG_TARGET_FINALIZE_HOOKS += KUZPKG_GENERATE_SYSTEM_PACKAGE
 endif
 
 $(eval $(meson-package))
