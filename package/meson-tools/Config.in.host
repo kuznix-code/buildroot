@@ -7,3 +7,6 @@ config BR2_PACKAGE_HOST_MESON_TOOLS
 	  boards with u-boot.
 
 	  https://github.com/afaerber/meson-tools
+
+source "package/asciidoc/Config.in.host"
+source "package/kuzpkg/Config.in.host"
