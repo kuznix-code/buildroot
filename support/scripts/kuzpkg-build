@@ -1,0 +1,81 @@
+#!/bin/sh
+# Generate a pacman-style .kuzpkg.tar.zst package from a Buildroot target tree.
+
+set -eu
+
+usage() {
+	echo "Usage: $0 --target DIR --output DIR --proto FILE --pkgver VERSION --arch ARCH [--pkgname NAME] [--url URL] [--desc TEXT] [--makepkg PATH]" >&2
+	exit 2
+}
+
+TARGET_DIR=
+OUTPUT_DIR=
+PROTO=
+PKGVER=
+ARCH=
+pkgname=buildroot-system
+URL=https://buildroot.org/
+DESC="Buildroot target filesystem generated from the selected configuration"
+MAKEPKG=makepkg
+
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--target) TARGET_DIR=$2; shift 2 ;;
+		--output) OUTPUT_DIR=$2; shift 2 ;;
+		--proto) PROTO=$2; shift 2 ;;
+		--pkgver) PKGVER=$2; shift 2 ;;
+		--arch) ARCH=$2; shift 2 ;;
+		--pkgname) pkgname=$2; shift 2 ;;
+		--url) URL=$2; shift 2 ;;
+		--desc) DESC=$2; shift 2 ;;
+		--makepkg) MAKEPKG=$2; shift 2 ;;
+		*) usage ;;
+	esac
+done
+
+[ -n "$TARGET_DIR" ] || usage
+[ -n "$OUTPUT_DIR" ] || usage
+[ -n "$PROTO" ] || usage
+[ -n "$PKGVER" ] || usage
+[ -n "$ARCH" ] || usage
+[ -d "$TARGET_DIR" ] || { echo "kuzpkg: target directory not found: $TARGET_DIR" >&2; exit 1; }
+[ -f "$PROTO" ] || { echo "kuzpkg: proto template not found: $PROTO" >&2; exit 1; }
+command -v "$MAKEPKG" >/dev/null 2>&1 || { echo "kuzpkg: makepkg not found: $MAKEPKG" >&2; exit 1; }
+
+workdir="$OUTPUT_DIR/.kuzpkg/$pkgname"
+rm -rf "$workdir"
+mkdir -p "$workdir"
+
+# Use awk instead of sed so arbitrary paths and descriptions are handled safely.
+awk \
+	-v pkgname="$pkgname" \
+	-v pkgver="$PKGVER" \
+	-v arch="$ARCH" \
+	-v url="$URL" \
+	-v desc="$DESC" \
+	-v target="$TARGET_DIR" \
+	'{
+		gsub(/@PKGNAME@/, pkgname);
+		gsub(/@PKGVER@/, pkgver);
+		gsub(/@ARCH@/, arch);
+		gsub(/@URL@/, url);
+		gsub(/@PKGDESC@/, desc);
+		gsub(/@TARGET_DIR@/, target);
+		print
+	}' "$PROTO" > "$workdir/PKGBUILD"
+
+# makepkg provides the same metadata/archive machinery used by kuzpkg.
+# --nodeps is intentional: Buildroot has already resolved build dependencies.
+# --nosign keeps this generated artifact usable without requiring a private key.
+(
+	cd "$workdir"
+	"$MAKEPKG" --force --nodeps --noconfirm --nosign
+)
+
+mkdir -p "$OUTPUT_DIR"
+for package in "$workdir"/*.kuzpkg.tar.zst; do
+	[ -f "$package" ] || continue
+	cp -f "$package" "$OUTPUT_DIR/"
+	done
+
+printf '%s\n' "kuzpkg: generated $(basename "$package")" >&2
