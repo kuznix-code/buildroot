@@ -1,0 +1,19 @@
+menu "Kuzpkg host kernel configuration"
+
+config BR2_LINUX_KERNEL_USE_HOST_RUNNING_CONFIG
+	bool "Use /boot/config-$(uname -r) from the build host"
+	depends on BR2_LINUX_KERNEL
+	depends on BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG
+	help
+	  Seed the Linux kernel configuration from the exact configuration
+	  of the kernel currently running on the build host.
+
+	  The file selected is /boot/config-$(uname -r). This intentionally
+	  does not scan /boot/config-* so that multiple installed kernels
+	  cannot result in an arbitrary configuration being selected.
+
+	  If the running kernel configuration does not exist, Buildroot
+	  reports an error instead of silently selecting another kernel
+	  configuration.
+
+endmenu
