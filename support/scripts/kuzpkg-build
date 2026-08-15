@@ -1,81 +1,90 @@
 #!/bin/sh
-# Generate a pacman-style .kuzpkg.tar.zst package from a Buildroot target tree.
+# Build a .kuzpkg.tar.zst package from a PKGBUILD-compatible .proto file.
+#
+# This helper delegates package creation to kuzpkg/makepkg so Buildroot uses
+# the same package format and metadata rules as Kuznix.
 
 set -eu
 
 usage() {
-	echo "Usage: $0 --target DIR --output DIR --proto FILE --pkgver VERSION --arch ARCH [--pkgname NAME] [--url URL] [--desc TEXT] [--makepkg PATH]" >&2
+	cat >&2 <<'EOF'
+usage: kuzpkg-build --target DIR --output DIR --proto FILE \
+	--pkgname NAME --pkgver VERSION --arch ARCH --url URL --desc DESCRIPTION \
+	[--makepkg PATH]
+EOF
 	exit 2
 }
 
 TARGET_DIR=
 OUTPUT_DIR=
 PROTO=
+PKGNAME=
 PKGVER=
 ARCH=
-pkgname=buildroot-system
-URL=https://buildroot.org/
-DESC="Buildroot target filesystem generated from the selected configuration"
+URL=
+DESC=
 MAKEPKG=makepkg
 
 while [ "$#" -gt 0 ]; do
 	case "$1" in
-		--target) TARGET_DIR=$2; shift 2 ;;
-		--output) OUTPUT_DIR=$2; shift 2 ;;
-		--proto) PROTO=$2; shift 2 ;;
-		--pkgver) PKGVER=$2; shift 2 ;;
-		--arch) ARCH=$2; shift 2 ;;
-		--pkgname) pkgname=$2; shift 2 ;;
-		--url) URL=$2; shift 2 ;;
-		--desc) DESC=$2; shift 2 ;;
-		--makepkg) MAKEPKG=$2; shift 2 ;;
-		*) usage ;;
+		--target) TARGET_DIR=${2:?missing argument for --target}; shift 2 ;;
+		--output) OUTPUT_DIR=${2:?missing argument for --output}; shift 2 ;;
+		--proto) PROTO=${2:?missing argument for --proto}; shift 2 ;;
+		--pkgname) PKGNAME=${2:?missing argument for --pkgname}; shift 2 ;;
+		--pkgver) PKGVER=${2:?missing argument for --pkgver}; shift 2 ;;
+		--arch) ARCH=${2:?missing argument for --arch}; shift 2 ;;
+		--url) URL=${2:?missing argument for --url}; shift 2 ;;
+		--desc) DESC=${2:?missing argument for --desc}; shift 2 ;;
+		--makepkg) MAKEPKG=${2:?missing argument for --makepkg}; shift 2 ;;
+		-h|--help) usage ;;
+		*) echo "kuzpkg-build: unknown option: $1" >&2; usage ;;
 	esac
 done
 
-[ -n "$TARGET_DIR" ] || usage
-[ -n "$OUTPUT_DIR" ] || usage
-[ -n "$PROTO" ] || usage
-[ -n "$PKGVER" ] || usage
-[ -n "$ARCH" ] || usage
-[ -d "$TARGET_DIR" ] || { echo "kuzpkg: target directory not found: $TARGET_DIR" >&2; exit 1; }
-[ -f "$PROTO" ] || { echo "kuzpkg: proto template not found: $PROTO" >&2; exit 1; }
-command -v "$MAKEPKG" >/dev/null 2>&1 || { echo "kuzpkg: makepkg not found: $MAKEPKG" >&2; exit 1; }
+[ -n "$TARGET_DIR" ] || { echo "kuzpkg-build: --target is required" >&2; usage; }
+[ -n "$OUTPUT_DIR" ] || { echo "kuzpkg-build: --output is required" >&2; usage; }
+[ -n "$PROTO" ] || { echo "kuzpkg-build: --proto is required" >&2; usage; }
+[ -n "$PKGNAME" ] || { echo "kuzpkg-build: --pkgname is required" >&2; usage; }
+[ -n "$PKGVER" ] || { echo "kuzpkg-build: --pkgver is required" >&2; usage; }
+[ -n "$ARCH" ] || { echo "kuzpkg-build: --arch is required" >&2; usage; }
+[ -n "$URL" ] || { echo "kuzpkg-build: --url is required" >&2; usage; }
+[ -n "$DESC" ] || { echo "kuzpkg-build: --desc is required" >&2; usage; }
 
-workdir="$OUTPUT_DIR/.kuzpkg/$pkgname"
-rm -rf "$workdir"
-mkdir -p "$workdir"
-
-# Use awk instead of sed so arbitrary paths and descriptions are handled safely.
-awk \
-	-v pkgname="$pkgname" \
-	-v pkgver="$PKGVER" \
-	-v arch="$ARCH" \
-	-v url="$URL" \
-	-v desc="$DESC" \
-	-v target="$TARGET_DIR" \
-	'{
-		gsub(/@PKGNAME@/, pkgname);
-		gsub(/@PKGVER@/, pkgver);
-		gsub(/@ARCH@/, arch);
-		gsub(/@URL@/, url);
-		gsub(/@PKGDESC@/, desc);
-		gsub(/@TARGET_DIR@/, target);
-		print
-	}' "$PROTO" > "$workdir/PKGBUILD"
-
-# makepkg provides the same metadata/archive machinery used by kuzpkg.
-# --nodeps is intentional: Buildroot has already resolved build dependencies.
-# --nosign keeps this generated artifact usable without requiring a private key.
-(
-	cd "$workdir"
-	"$MAKEPKG" --force --nodeps --noconfirm --nosign
-)
+[ -d "$TARGET_DIR" ] || { echo "kuzpkg-build: target directory does not exist: $TARGET_DIR" >&2; exit 1; }
+[ -f "$PROTO" ] || { echo "kuzpkg-build: proto file does not exist: $PROTO" >&2; exit 1; }
+[ -x "$MAKEPKG" ] || command -v "$MAKEPKG" >/dev/null 2>&1 || {
+	echo "kuzpkg-build: makepkg not found: $MAKEPKG" >&2
+	exit 1
+}
 
 mkdir -p "$OUTPUT_DIR"
-for package in "$workdir"/*.kuzpkg.tar.zst; do
-	[ -f "$package" ] || continue
-	cp -f "$package" "$OUTPUT_DIR/"
-	done
+work=$(mktemp -d "${TMPDIR:-/tmp}/kuzpkg-build.XXXXXXXX")
+trap 'rm -rf "$work"' EXIT HUP INT TERM
 
-printf '%s\n' "kuzpkg: generated $(basename "$package")" >&2
+# Treat the proto as a template instead of sourcing it. This keeps metadata
+# substitution deterministic and prevents arbitrary proto code from running
+# in the Buildroot shell.
+sed \
+	-e "s|@PKGNAME@|$(printf '%s' "$PKGNAME" | sed 's/[\\&|]/\\&/g')|g" \
+	-e "s|@PKGVER@|$(printf '%s' "$PKGVER" | sed 's/[\\&|]/\\&/g')|g" \
+	-e "s|@ARCH@|$(printf '%s' "$ARCH" | sed 's/[\\&|]/\\&/g')|g" \
+	-e "s|@URL@|$(printf '%s' "$URL" | sed 's/[\\&|]/\\&/g')|g" \
+	-e "s|@PKGDESC@|$(printf '%s' "$DESC" | sed 's/[\\&|]/\\&/g')|g" \
+	-e "s|@TARGET_DIR@|$(printf '%s' "$TARGET_DIR" | sed 's/[\\&|]/\\&/g')|g" \
+	"$PROTO" > "$work/PKGBUILD"
+
+cd "$work"
+"$MAKEPKG" -f --nodeps --noconfirm
+
+found=0
+for package in "$work"/*.kuzpkg.tar.zst; do
+	[ -e "$package" ] || continue
+	mv "$package" "$OUTPUT_DIR/"
+printf '%s\n' "$OUTPUT_DIR/$(basename "$package")"
+	found=1
+done
+
+[ "$found" -eq 1 ] || {
+	echo "kuzpkg-build: makepkg produced no .kuzpkg.tar.zst package" >&2
+	exit 1
+}
