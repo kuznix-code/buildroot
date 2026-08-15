@@ -2697,16 +2697,18 @@ endif
 endmenu
 
 menu "Package managers"
+
 comment "-------------------------------------------------------"
 comment "Kuznix uses kuzpkg as its native package manager.      "
 comment "Binary packages are generated in .kuzpkg.tar.zst      "
 comment "format using PKGBUILD-compatible recipes and makepkg. "
 comment "*                                                      "
-comment "Buildroot target configurations can be packaged        "
+comment "Buildroot target configurations can be packaged       "
 comment "automatically when kuzpkg package generation is enabled."
 comment "-------------------------------------------------------"
 
-	source "package/kuzpkg/Config.in"
+source "package/kuzpkg/Config.in"
+
 endmenu
 
 menu "Real-Time"
