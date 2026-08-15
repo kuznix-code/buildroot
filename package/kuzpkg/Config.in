@@ -1,7 +1,7 @@
 config BR2_PACKAGE_KUZPKG
 	bool "kuzpkg"
 	depends on BR2_USE_MMU
-	depends on BR2_PACKAGE_BASH
+	select BR2_PACKAGE_BASH
 	select BR2_PACKAGE_LIBARCHIVE
 	select BR2_PACKAGE_LIBCURL
 	select BR2_PACKAGE_GPGME
@@ -12,8 +12,6 @@ config BR2_PACKAGE_KUZPKG
 
 	  Packages use the .kuzpkg.tar.zst format and PKGBUILD-compatible
 	  build recipes. The upstream Kuznix-Team/kuzpkg git tree is used.
-
-	  https://github.com/Kuznix-Team/kuzpkg
 
 if BR2_PACKAGE_KUZPKG
 
