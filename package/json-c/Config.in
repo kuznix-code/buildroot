@@ -11,3 +11,5 @@ config BR2_PACKAGE_JSON_C
 	  strings back into the C representation of JSON objects.
 
 	  https://github.com/json-c/json-c/
+
+source "package/yyjson/Config.in"
