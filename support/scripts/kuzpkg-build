@@ -1,8 +1,8 @@
 #!/bin/sh
 # Build a .kuzpkg.tar.zst package from a PKGBUILD-compatible .proto file.
 #
-# This helper intentionally delegates package creation to kuzpkg/makepkg so
-# Buildroot uses the same package format and metadata rules as Kuznix.
+# This helper delegates package creation to kuzpkg/makepkg so Buildroot uses
+# the same package format and metadata rules as Kuznix.
 
 set -eu
 
@@ -41,10 +41,14 @@ while [ "$#" -gt 0 ]; do
 	esac
 done
 
-for var in TARGET_DIR OUTPUT_DIR PROTO PKGNAME PKGVER ARCH URL DESC; do
-	eval "value=\${$var}"
-	[ -n "$value" ] || { echo "kuzpkg-build: missing --${var#TARGET_DIR}" >&2; usage; }
-done
+[ -n "$TARGET_DIR" ] || { echo "kuzpkg-build: --target is required" >&2; usage; }
+[ -n "$OUTPUT_DIR" ] || { echo "kuzpkg-build: --output is required" >&2; usage; }
+[ -n "$PROTO" ] || { echo "kuzpkg-build: --proto is required" >&2; usage; }
+[ -n "$PKGNAME" ] || { echo "kuzpkg-build: --pkgname is required" >&2; usage; }
+[ -n "$PKGVER" ] || { echo "kuzpkg-build: --pkgver is required" >&2; usage; }
+[ -n "$ARCH" ] || { echo "kuzpkg-build: --arch is required" >&2; usage; }
+[ -n "$URL" ] || { echo "kuzpkg-build: --url is required" >&2; usage; }
+[ -n "$DESC" ] || { echo "kuzpkg-build: --desc is required" >&2; usage; }
 
 [ -d "$TARGET_DIR" ] || { echo "kuzpkg-build: target directory does not exist: $TARGET_DIR" >&2; exit 1; }
 [ -f "$PROTO" ] || { echo "kuzpkg-build: proto file does not exist: $PROTO" >&2; exit 1; }
@@ -57,9 +61,9 @@ mkdir -p "$OUTPUT_DIR"
 work=$(mktemp -d "${TMPDIR:-/tmp}/kuzpkg-build.XXXXXXXX")
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 
-# The proto is deliberately treated as a template, not sourced. This keeps
-# package generation deterministic and prevents metadata from executing in
-# the Buildroot shell.
+# Treat the proto as a template instead of sourcing it. This keeps metadata
+# substitution deterministic and prevents arbitrary proto code from running
+# in the Buildroot shell.
 sed \
 	-e "s|@PKGNAME@|$(printf '%s' "$PKGNAME" | sed 's/[\\&|]/\\&/g')|g" \
 	-e "s|@PKGVER@|$(printf '%s' "$PKGVER" | sed 's/[\\&|]/\\&/g')|g" \
@@ -70,12 +74,17 @@ sed \
 	"$PROTO" > "$work/PKGBUILD"
 
 cd "$work"
-"$MAKEPKG" -f --nodeps --noconfirm --packagelist > "$work/package-list"
 "$MAKEPKG" -f --nodeps --noconfirm
 
-while IFS= read -r package; do
-	[ -n "$package" ] || continue
+found=0
+for package in "$work"/*.kuzpkg.tar.zst; do
+	[ -e "$package" ] || continue
 	mv "$package" "$OUTPUT_DIR/"
-done < "$work/package-list"
+printf '%s\n' "$OUTPUT_DIR/$(basename "$package")"
+	found=1
+done
 
-cat "$work/package-list"
+[ "$found" -eq 1 ] || {
+	echo "kuzpkg-build: makepkg produced no .kuzpkg.tar.zst package" >&2
+	exit 1
+}
