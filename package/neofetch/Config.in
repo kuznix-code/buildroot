@@ -8,3 +8,5 @@ config BR2_PACKAGE_NEOFETCH
 	  including hardware, in a visually pleasing way.
 
 	  https://github.com/dylanaraps/neofetch
+
+source "package/fastfetch/Config.in"
