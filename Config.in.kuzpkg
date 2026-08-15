@@ -1,0 +1,39 @@
+menu "Kuzpkg package integration"
+
+config BR2_KUZPKG
+	bool "Enable Kuzpkg package generation"
+	default y
+	depends on BR2_PACKAGE_HOST_KUZPKG
+	help
+	  Generate .kuzpkg.tar.zst packages for selected Buildroot target
+	  packages using support/scripts/kuzpkg-build.
+
+config BR2_KUZPKG_AUTO_UPDATE_GIT
+	bool "Enable automatic Git package update checking"
+	depends on BR2_KUZPKG
+	help
+	  Check Git-based package sources for newer revisions and write an
+	  update report under $(BINARIES_DIR)/kuzpkg.
+
+config BR2_KUZPKG_AUTO_UPDATE_GIT_INTERVAL
+	int "Git update check interval (hours)"
+	default 24
+	depends on BR2_KUZPKG_AUTO_UPDATE_GIT
+	range 1 8760
+
+config BR2_KUZPKG_SIGN
+	bool "Sign generated Kuzpkg packages"
+	depends on BR2_KUZPKG
+	help
+	  Sign generated .kuzpkg.tar.zst packages when the configured
+	  kuzpkg signing key is available.
+
+config BR2_KUZPKG_REPRODUCIBLE
+	bool "Use reproducible Kuzpkg metadata"
+	default y
+	depends on BR2_KUZPKG
+	help
+	  Pass Buildroot's reproducible build timestamp and deterministic
+	  metadata to Kuzpkg package generation.
+
+endmenu
