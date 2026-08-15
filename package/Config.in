@@ -2705,8 +2705,8 @@ comment "*                                                      "
 comment "Buildroot target configurations can be packaged        "
 comment "automatically when kuzpkg package generation is enabled."
 comment "-------------------------------------------------------"
+
 	source "package/kuzpkg/Config.in"
-	source "package/rpm/Config.in"
 endmenu
 
 menu "Real-Time"
