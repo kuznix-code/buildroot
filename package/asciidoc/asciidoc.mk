@@ -5,8 +5,8 @@
 ################################################################################
 
 ASCIIDOC_VERSION = 10.2.1
-ASCIIDOC_SOURCE = asciidoc-py-$(ASCIIDOC_VERSION).tar.gz
-ASCIIDOC_SITE = https://github.com/asciidoc-py/asciidoc-py/archive/refs/tags
+ASCIIDOC_SOURCE = v$(ASCIIDOC_VERSION).tar.gz
+ASCIIDOC_SITE = https://github.com/asciidoc-py/asciidoc-py/releases/download/$(ASCIIDOC_VERSION)
 ASCIIDOC_LICENSE = GPL-2.0+
 ASCIIDOC_LICENSE_FILES = COPYING
 ASCIIDOC_SETUP_TYPE = setuptools
