@@ -32,7 +32,6 @@ HOST_KUZPKG_DEPENDENCIES = \
 	host-ninja \
 	host-libarchive \
 	host-fakeroot \
-	host-libcurl \
 	host-gnupg \
 	host-asciidoc \
 	host-zstd
@@ -40,7 +39,7 @@ HOST_KUZPKG_DEPENDENCIES = \
 HOST_KUZPKG_CONF_OPTS = \
 	-Duse-git-version=false \
 	-Dcrypto=openssl \
-	-Dcurl=enabled \
+	-Dcurl=disabled \
 	-Dgpgme=disabled \
 	-Ddoc=enabled \
 	-Dpkg-ext=.kuzpkg.tar.zst
