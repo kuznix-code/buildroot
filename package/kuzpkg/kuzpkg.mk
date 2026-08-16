@@ -16,7 +16,7 @@ KUZPKG_DEPENDENCIES = \
 	bash \
 	libarchive \
 	libcurl \
-	gpgme2 \
+	gnupg2 \
 	openssl \
 	zstd
 
