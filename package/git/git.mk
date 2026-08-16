@@ -72,12 +72,14 @@ endif
 
 GIT_CONF_OPTS += CFLAGS="$(GIT_CFLAGS)"
 
+GIT_MAKE_OPTS += NO_RUST=1
+
 GIT_INSTALL_TARGET_OPTS = $(GIT_MAKE_OPTS) DESTDIR=$(TARGET_DIR) install
 
 # assume yes for these tests, configure will bail out otherwise
 # saying error: cannot run test program while cross compiling
 GIT_CONF_ENV += \
 	ac_cv_fread_reads_directories=yes \
-	ac_cv_snprintf_returns_bogus=yes LIBS='$(GIT_CONF_ENV_LIBS)' NO_RUST=1
+	ac_cv_snprintf_returns_bogus=yes LIBS='$(GIT_CONF_ENV_LIBS)'
 
 $(eval $(autotools-package))
