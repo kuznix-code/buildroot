@@ -15,7 +15,7 @@ KUZPKG_DEPENDENCIES = \
 	bash \
 	libarchive \
 	libcurl \
-	gpgme \
+	gnupg \
 	openssl \
 	zstd
 
@@ -23,7 +23,7 @@ KUZPKG_CONF_OPTS = \
 	-Duse-git-version=false \
 	-Dcrypto=openssl \
 	-Dcurl=enabled \
-	-Dgpgme=enabled \
+	-Dgpgme=disabled \
 	-Ddoc=enabled \
 	-Dpkg-ext=.kuzpkg.tar.zst
 
@@ -33,7 +33,7 @@ HOST_KUZPKG_DEPENDENCIES = \
 	host-libarchive \
 	host-fakeroot \
 	host-curl \
-	host-gpgme \
+	host-gnupg \
 	host-asciidoc \
 	host-zstd
 
@@ -41,7 +41,7 @@ HOST_KUZPKG_CONF_OPTS = \
 	-Duse-git-version=false \
 	-Dcrypto=openssl \
 	-Dcurl=enabled \
-	-Dgpgme=enabled \
+	-Dgpgme=disabled \
 	-Ddoc=enabled \
 	-Dpkg-ext=.kuzpkg.tar.zst
 
