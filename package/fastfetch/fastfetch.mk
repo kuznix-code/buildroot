@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-FASTFETCH_VERSION = 2.66.0
+FASTFETCH_VERSION = 2.67.1
 FASTFETCH_SITE = https://github.com/fastfetch-cli/fastfetch/releases/download/$(FASTFETCH_VERSION)
-FASTFETCH_SOURCE = fastfetch-$(FASTFETCH_VERSION).tar.gz
+FASTFETCH_SOURCE = v$(FASTFETCH_VERSION).tar.gz
 FASTFETCH_LICENSE = MIT
 FASTFETCH_LICENSE_FILES = LICENSE
 FASTFETCH_DEPENDENCIES = yyjson
