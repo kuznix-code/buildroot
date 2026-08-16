@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-GIT_VERSION = 2.54.0
+GIT_VERSION = 2.55.0
 GIT_SOURCE = git-$(GIT_VERSION).tar.xz
 GIT_SITE = $(BR2_KERNEL_MIRROR)/software/scm/git
 GIT_LICENSE = GPL-2.0, LGPL-2.1+
@@ -78,6 +78,6 @@ GIT_INSTALL_TARGET_OPTS = $(GIT_MAKE_OPTS) DESTDIR=$(TARGET_DIR) install
 # saying error: cannot run test program while cross compiling
 GIT_CONF_ENV += \
 	ac_cv_fread_reads_directories=yes \
-	ac_cv_snprintf_returns_bogus=yes LIBS='$(GIT_CONF_ENV_LIBS)'
+	ac_cv_snprintf_returns_bogus=yes LIBS='$(GIT_CONF_ENV_LIBS)' NO_RUST=1
 
 $(eval $(autotools-package))
