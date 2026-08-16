@@ -32,7 +32,7 @@ HOST_KUZPKG_DEPENDENCIES = \
 	host-ninja \
 	host-libarchive \
 	host-fakeroot \
-	host-curl \
+	host-libcurl \
 	host-gnupg \
 	host-asciidoc \
 	host-zstd
