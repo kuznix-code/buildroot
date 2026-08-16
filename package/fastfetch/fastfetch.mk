@@ -5,7 +5,7 @@
 ################################################################################
 
 FASTFETCH_VERSION = 2.67.1
-FASTFETCH_SITE = https://github.com/fastfetch-cli/fastfetch/releases/download/$(FASTFETCH_VERSION)
+FASTFETCH_SITE = https://github.com/fastfetch-cli/fastfetch/refs/tags/$(FASTFETCH_VERSION)
 FASTFETCH_SOURCE = $(FASTFETCH_VERSION).tar.gz
 FASTFETCH_LICENSE = MIT
 FASTFETCH_LICENSE_FILES = LICENSE
