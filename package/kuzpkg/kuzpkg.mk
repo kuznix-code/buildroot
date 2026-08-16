@@ -16,7 +16,7 @@ KUZPKG_DEPENDENCIES = \
 	bash \
 	libarchive \
 	libcurl \
-	gnupg2 \
+	gnupg \
 	openssl \
 	zstd
 
@@ -34,7 +34,7 @@ HOST_KUZPKG_DEPENDENCIES = \
 	host-libarchive \
 	host-fakeroot \
 	host-curl \
-	host-gpgme \
+	host-gnupg \
 	host-zstd \
 	host-asciidoc
 
