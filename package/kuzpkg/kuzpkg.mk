@@ -4,10 +4,9 @@
 #
 ################################################################################
 
-KUZPKG_VERSION = master
-KUZPKG_SITE = https://github.com/Kuznix-Team/kuzpkg.git
-KUZPKG_SITE_METHOD = git
-KUZPKG_GIT_SUBMODULES = YES
+KUZPKG_VERSION = 0.1.0-alpha
+KUZPKG_SITE = https://github.com/Kuznix-Team/kuzpkg/archive/refs/tags
+KUZPKG_SOURCE = $(KUZPKG_VERSION).tar.gz
 KUZPKG_LICENSE = GPL-2.0+
 KUZPKG_LICENSE_FILES = COPYING
 KUZPKG_INSTALL_STAGING = YES
@@ -16,12 +15,12 @@ KUZPKG_DEPENDENCIES = \
 	bash \
 	libarchive \
 	libcurl \
-	gnupg \
+	gpgme \
 	openssl \
 	zstd
 
 KUZPKG_CONF_OPTS = \
-	-Duse-git-version=true \
+	-Duse-git-version=false \
 	-Dcrypto=openssl \
 	-Dcurl=enabled \
 	-Dgpgme=enabled \
@@ -34,22 +33,23 @@ HOST_KUZPKG_DEPENDENCIES = \
 	host-libarchive \
 	host-fakeroot \
 	host-curl \
-	host-gnupg \
-	host-zstd \
-	host-asciidoc
+	host-gpgme \
+	host-asciidoc \
+	host-zstd
 
 HOST_KUZPKG_CONF_OPTS = \
-	-Duse-git-version=true \
+	-Duse-git-version=false \
 	-Dcrypto=openssl \
 	-Dcurl=enabled \
 	-Dgpgme=enabled \
 	-Ddoc=enabled \
 	-Dpkg-ext=.kuzpkg.tar.zst
 
-# Generate one .kuzpkg.tar.zst for every selected target package. The generic
-# package infrastructure already records each package's target file list in
-# .files-list.txt, so no changes are required in the ~3,000 package .mk files.
-# Host packages are excluded because they are not part of TARGET_DIR.
+
+################################################################################
+# Generate .kuzpkg.tar.zst packages for selected Buildroot target packages
+################################################################################
+
 define KUZPKG_GENERATE_ALL_PACKAGES
 	$(Q)mkdir -p $(BINARIES_DIR)/kuzpkg
 	$(foreach pkg,$(PACKAGES),\
@@ -67,7 +67,19 @@ define KUZPKG_GENERATE_ALL_PACKAGES
 					--desc "Buildroot package $(pkg)" \
 					--makepkg "$(HOST_DIR)/bin/makepkg"$(sep))))
 endef
+
 KUZPKG_TARGET_FINALIZE_HOOKS += KUZPKG_GENERATE_ALL_PACKAGES
 
+
+################################################################################
+# Build target package
+################################################################################
+
 $(eval $(meson-package))
+
+
+################################################################################
+# Build host package
+################################################################################
+
 $(eval $(host-meson-package))
