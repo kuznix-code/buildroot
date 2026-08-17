@@ -46,31 +46,6 @@ HOST_KUZPKG_CONF_OPTS = \
 
 
 ################################################################################
-# Generate .kuzpkg.tar.zst packages for selected Buildroot target packages
-################################################################################
-
-define KUZPKG_GENERATE_ALL_PACKAGES
-	$(Q)mkdir -p $(BINARIES_DIR)/kuzpkg
-	$(foreach pkg,$(PACKAGES),\
-		$(if $(filter host-%,$(pkg)),,\
-			$(if $(wildcard $($(call UPPERCASE,$(pkg))_DIR)/.files-list.txt),\
-				$(Q)$(TOPDIR)/support/scripts/kuzpkg-build \
-					--target "$(TARGET_DIR)" \
-					--output "$(BINARIES_DIR)/kuzpkg" \
-					--proto "$(KUZPKG_PKGDIR)/PKGBUILD.proto" \
-					--file-list "$($(call UPPERCASE,$(pkg))_DIR)/.files-list.txt" \
-					--pkgname "$(pkg)" \
-					--pkgver "$(or $($(call UPPERCASE,$(pkg))_VERSION),1)" \
-					--arch "$(BR2_ARCH)" \
-					--url "$(or $($(call UPPERCASE,$(pkg))_SITE),https://buildroot.org/)" \
-					--desc "Buildroot package $(pkg)" \
-					--makepkg "$(HOST_DIR)/bin/makepkg"$(sep))))
-endef
-
-KUZPKG_TARGET_FINALIZE_HOOKS += KUZPKG_GENERATE_ALL_PACKAGES
-
-
-################################################################################
 # Build target package
 ################################################################################
 
